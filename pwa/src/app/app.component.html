@@ -1,0 +1,189 @@
+<main class="app-container">
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo-circle">🛡️</div>
+      <div>
+        <h1>PARKSURE</h1>
+        <p>Mumbai Station Micro-Underwriting</p>
+      </div>
+    </div>
+    <div class="pill-badge">₹5/DAY</div>
+  </header>
+
+  <!-- View Content -->
+  <section class="content-scroll">
+    
+    <!-- 1. INSURE TAB -->
+    <div *ngIf="activeTab() === 'insure'" class="tab-pane">
+      <div class="clean-card intro-banner">
+        <h2>Instant 60s Parking Insurance</h2>
+        <p>Zero paperwork protection against theft & station lot damages.</p>
+      </div>
+
+      <div class="clean-card form-group">
+        <label>1. Select Mumbai Station</label>
+        <select [ngModel]="selectedStationId()" (ngModelChange)="selectedStationId.set($event)" class="clean-input">
+          <option *ngFor="let st of parkSure.stations()" [value]="st.id">
+            {{ st.name }} ({{ st.line }} • {{ st.availableSpots }} spots left)
+          </option>
+        </select>
+
+        <label>2. Vehicle Registration Number</label>
+        <input type="text" [ngModel]="vehicleNumber()" (ngModelChange)="vehicleNumber.set($event)" placeholder="e.g. MH02EK9842" class="clean-input uppercase" />
+
+        <label>3. Select Vehicle Type</label>
+        <div class="pill-selector">
+          <button [class.active]="vehicleType() === 'SCOOTER'" (click)="vehicleType.set('SCOOTER')">🛵 Scooter</button>
+          <button [class.active]="vehicleType() === 'MOTORCYCLE'" (click)="vehicleType.set('MOTORCYCLE')">🏍️ Motorcycle</button>
+          <button [class.active]="vehicleType() === 'ELECTRIC_EV'" (click)="vehicleType.set('ELECTRIC_EV')">⚡ EV Bike</button>
+        </div>
+
+        <label>4. Select Micro-Plan</label>
+        <div class="plan-cards">
+          <div *ngFor="let p of parkSure.plans()" 
+               class="plan-box" 
+               [class.selected]="selectedPlanId() === p.id"
+               (click)="selectedPlanId.set(p.id)">
+            <div class="plan-head">
+              <strong>{{ p.name }}</strong>
+              <span class="price">₹{{ p.dailyPrice }}/day</span>
+            </div>
+            <p>Coverage up to ₹{{ p.maxCoverage | number }} • Theft & Accidental Damage included</p>
+          </div>
+        </div>
+
+        <button class="primary-btn" (click)="handleActivate()">
+          <span>🔒 Activate ₹{{ selectedPlanId() === 'basic_commuter' ? 5 : 10 }} Micro-Coverage</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. SCANNER TAB -->
+    <div *ngIf="activeTab() === 'scanner'" class="tab-pane">
+      <div class="clean-card">
+        <h3>Station QR & Gate Pass Scanner</h3>
+        <p class="sub-text">Point camera at ParkSure Station Lot QR Standee or Gate QR.</p>
+        
+        <div class="scanner-frame">
+          <div class="scan-reticle"></div>
+          <p>📷 Live Camera Stream Ready</p>
+        </div>
+
+        <p class="or-divider">── QUICK PRESET SCANS ──</p>
+        <div class="preset-buttons">
+          <button (click)="simulateScan('PARKSURE:ZONE:ANDHERI-WEST:LOT4')">Andheri West Zone QR</button>
+          <button (click)="simulateScan('PARKSURE:ZONE:DADAR-STATION:P1')">Dadar Station Zone QR</button>
+        </div>
+
+        <div *ngIf="scannedCode()" class="scanned-box">
+          <strong>Scanned Payload:</strong>
+          <code>{{ scannedCode() }}</code>
+          <button class="primary-btn mt-2" (click)="setTab('insure')">Underwrite at This Station</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. PASSES TAB -->
+    <div *ngIf="activeTab() === 'passes'" class="tab-pane">
+      <h3>Active QR Gate Passes ({{ parkSure.activePolicies().length }})</h3>
+
+      <div *ngFor="let pass of parkSure.policies()" class="clean-card pass-card" (click)="openPassModal(pass)">
+        <div class="pass-header">
+          <div>
+            <strong>{{ pass.vehicleNumber }}</strong>
+            <p>{{ pass.stationName }}</p>
+          </div>
+          <span class="pill-badge" [class.claimed]="pass.status === 'CLAIMED'">{{ pass.status }}</span>
+        </div>
+        <div class="pass-footer">
+          <span>Policy: {{ pass.policyNumber }}</span>
+          <span class="link-btn">View QR Pass ➔</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. STATIONS TAB -->
+    <div *ngIf="activeTab() === 'stations'" class="tab-pane">
+      <h3>100+ Mumbai Station Network</h3>
+      <div *ngFor="let st of parkSure.stations()" class="clean-card station-card">
+        <div class="st-head">
+          <strong>{{ st.name }}</strong>
+          <span class="pill-badge">{{ st.line }}</span>
+        </div>
+        <div class="st-info">
+          <span>📹 CCTV: {{ st.cctvCovered ? 'Active' : 'N/A' }}</span>
+          <span>🛡️ Guard: {{ st.guardOnDuty ? 'On Duty' : 'No' }}</span>
+          <span>🅿️ {{ st.availableSpots }} / {{ st.totalSpots }} Available</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- PASS QR MODAL -->
+  <div *ngIf="selectedPass()" class="modal-backdrop" (click)="closePassModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>PARKSURE PASS</h3>
+        <button class="close-btn" (click)="closePassModal()">✕</button>
+      </div>
+
+      <div class="qr-box" *ngIf="qrDataUrl()">
+        <img [src]="qrDataUrl()" alt="Policy Pass QR Code" />
+      </div>
+
+      <div class="pass-meta">
+        <div><label>Policy No:</label> <strong>{{ selectedPass()?.policyNumber }}</strong></div>
+        <div><label>Vehicle:</label> <strong>{{ selectedPass()?.vehicleNumber }}</strong></div>
+        <div><label>Station:</label> <strong>{{ selectedPass()?.stationName }}</strong></div>
+        <div><label>Coverage:</label> <strong>₹{{ selectedPass()?.coverageAmount | number }}</strong></div>
+      </div>
+
+      <button class="primary-btn claim-trigger" (click)="openClaim(selectedPass()!)">
+        ⚡ File Instant Claim
+      </button>
+    </div>
+  </div>
+
+  <!-- CLAIM MODAL -->
+  <div *ngIf="showClaimModal()" class="modal-backdrop" (click)="showClaimModal.set(false)">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <h3>File Damage / Theft Claim</h3>
+      <label>Select Damage Type</label>
+      <select [ngModel]="claimIncident()" (ngModelChange)="claimIncident.set($event)" class="clean-input">
+        <option>Minor Scratches / Mirror Broken (₹1,500)</option>
+        <option>Part Theft - Battery / Helmet (₹4,500)</option>
+        <option>Major Accidental Lot Damage (₹15,000)</option>
+        <option>Vehicle Total Theft (₹25,000)</option>
+      </select>
+
+      <label>Notes / Parking Spot Details</label>
+      <textarea [ngModel]="claimNotes()" (ngModelChange)="claimNotes.set($event)" class="clean-input" placeholder="e.g. Parked near Pillar 4 West Gate"></textarea>
+
+      <button class="primary-btn" (click)="submitClaim()">
+        🚀 Submit Direct UPI Claim
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button [class.active]="activeTab() === 'insure'" (click)="setTab('insure')">
+      <span>🛡️</span>
+      <small>Insure ₹5</small>
+    </button>
+    <button [class.active]="activeTab() === 'scanner'" (click)="setTab('scanner')">
+      <span>📷</span>
+      <small>Scanner</small>
+    </button>
+    <button [class.active]="activeTab() === 'passes'" (click)="setTab('passes')">
+      <span>🎫</span>
+      <small>My Passes</small>
+    </button>
+    <button [class.active]="activeTab() === 'stations'" (click)="setTab('stations')">
+      <span>🚉</span>
+      <small>Stations</small>
+    </button>
+  </nav>
+</main>
