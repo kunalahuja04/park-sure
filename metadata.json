@@ -1,0 +1,6 @@
+{
+  "name": "ParkSure",
+  "description": "QR-code powered micro-insurance and instant product lookup for parked two-wheelers across Mumbai railway stations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
